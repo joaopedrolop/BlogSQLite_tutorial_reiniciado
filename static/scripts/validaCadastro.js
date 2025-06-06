@@ -8,23 +8,26 @@ const confirmarSenha = document.getElementById("confirmarSenha");
 const celular = document.getElementById("celular");
 const cpf = document.getElementById("cpf");
 const rg = document.getElementById("rg");
-const msgError = document.getElementsByClassName("msgError");
+const msgErrorElements = document.getElementsByClassName("msgError");
 
 /* ------ FUNÇÃO PARA RENDERIZAR AS DIFERENTES MENSAGENS DE ERRO! ------ */
 const createDisplayMsgError = (mensagem) => {
-  msgError[0].textContent = mensagem;
+  if (msgErrorElements.length > 0) {
+    msgErrorElements[0].textContent = mensagem;
+    msgErrorElements[0].computedStyleMap.display = mensagem ? 'block' : 'nome';
+  }
 };
 /* --------------------------------------------------------------------- */
 
 /* ---------------- FUNÇÃO PARA VERIFICAR O NOME ----------------------- */
 const checkNome = () => {
-  const nomeRegex = /^[A-Za-zÀ-ÿ\s]+$/;
-  return nomeRegex.test(nome.value);
+  const nomeRegex = /^[A-Za-zÀ-ÿ\s'-]+$/;
+  return nomeRegex.test(nome.value.trim());
 };
 /* --------------------------------------------------------------------- */
 
 /* ---------- FUNÇÃO PARA VERIFICAR O EMAIL --------------------- */
-const checkEmail = (email) => {
+const checkEmail = (emailValue) => {
   const partesEmail = email.split("@");
 
   if (
@@ -101,13 +104,15 @@ function checkPasswordStrength(senha) {
 /* --------------------------------------------------------------------- */
 
 /* ------------- FUNÇÃO PARA VERIFICAR E ENVIAR DADOS ------------------ */
-function fetchDatas(event) {
+async function fetchDatas(event) {
   event.preventDefault();
+  createDisplayMsgError("");
 
-  if (!checkNome) {
+  if (!checkNome()) {
     createDisplayMsgError(
       "O nome não pode conter números ou caracteres especiais!"
     );
+    nome.focus();
     return;
   }
 
@@ -115,6 +120,7 @@ function fetchDatas(event) {
     createDisplayMsgError(
       "O nome não pode conter números ou caracteres especiais!"
     );
+    email.focus();
     return;
   }
 
@@ -126,24 +132,58 @@ function fetchDatas(event) {
   const senhaError = checkPasswordStrength(senha.value);
   if (senhaError) {
     createDisplayMsgError(senhaError);
+    senha.focus();
     return;
   }
 
-  if (celular.value && /[A-Za-zÀ-ÿ]/.test(celular.value)) {
-    createDisplayMsgError("O telefone deve conter apenas números");
+  if (!checkPasswordMatch()) {
+    createDisplayMsgError("As senhas digitadas não coincidem");
+    confirmarSenha.focus();
+    return;
+  }
+
+  const celularlimpo = celular.value.replace(/\D/E, "");
+  if (celular.value && (celularlimpo.length < 10 || celularlimpo.length > 11)) {
+    createDisplayMsgError("o numero de celular parece invalido,");
+    celular.focus();
     return;
   }
 
   const formData = {
-    nome: nome.value,
-    email: email.value,
-    senha: senha.value,
-    celular: celular.value,
-    cpf: cpf.value,
-    rg: rg.value,
+    username: nome.value.trim(),
+    email: email.value.trim(),
+    password: senha.value,
+    celular: celularlimpo,
+    cpf: cpf.value.replace(/\D/g, ""),
+    rg: rg.value.replace(/\D/g, ""),
   };
 
   console.log("Formulário Enviado: ", JSON.stringify(formData, null, 2));
+
+  try {
+    const response = await fetch('/cadastro', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Sucesso', result);
+      formulario.reset();
+      alert('Cadastro realizado com sucesso! ' + (result.message || ''));
+      window.location.href = "/login";
+    } else {
+      const errorData = await response.json().catch(() => ({ message: 'Erro ao processar a resposta do servidor.'}));
+      console.error('Erro do servidor:', response.status, errorData);
+      createDisplayMsgError(`Erro: ${errorData.message || response.statusText}`); 
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    createDisplayMsgError('Erro de conexão. Por favor, tenete novemento');
+  }
 }
 /* --------------------------------------------------------------------- */
 
