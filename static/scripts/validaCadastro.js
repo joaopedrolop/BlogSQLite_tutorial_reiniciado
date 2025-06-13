@@ -14,7 +14,7 @@ const msgErrorElements = document.getElementsByClassName("msgError");
 const createDisplayMsgError = (mensagem) => {
   if (msgErrorElements.length > 0) {
     msgErrorElements[0].textContent = mensagem;
-    msgErrorElements[0].computedStyleMap.display = mensagem ? 'block' : 'nome';
+    msgErrorElements[0].style.display = mensagem ? 'block' : 'nome';
   }
 };
 /* --------------------------------------------------------------------- */
@@ -28,7 +28,11 @@ const checkNome = () => {
 
 /* ---------- FUNÇÃO PARA VERIFICAR O EMAIL --------------------- */
 const checkEmail = (emailValue) => {
-  const partesEmail = email.split("@");
+  const emailTrimmed = emailValue.trim();
+  const emailRagex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRagex.test(emailTrimmed)) {
+    return false;
+  }
 
   if (
     (partesEmail.length === 2 &&

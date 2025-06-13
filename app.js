@@ -148,6 +148,11 @@ app.post("/cadastro", (req, res) => {
       } else if (row.email === email) {
         conflictField ="Email";
       }
+      return res.status(409).json({
+        success: false,
+        message: `${conflictField} ja cadastrado. Por favor, escolha outro.`
+      })
+    } else {
       // 3. Se usuário não existe no banco cadastrar
       const insertQuery =
         "INSERT INTO users (username, password, email, celular, cpf, rg) VALUES (?,?,?,?,?,?)";
